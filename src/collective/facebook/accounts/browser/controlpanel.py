@@ -137,9 +137,9 @@ class IFacebookUserSchema(Interface):
                               required=True)
 
     # I think this is not neccessary
-    #app_secret = schema.TextLine(title=_(u'App Secret'),
-                                 #description=_(u"Secret for your application."),
-                                 #required=True)
+    app_secret = schema.TextLine(title=_(u'App Secret'),
+                                 description=_(u"Secret for your application. ( mandatory to get long life user token )"),
+                                 required=False)
 
 class IFacebookAppSchema(Interface):
 
@@ -167,7 +167,7 @@ class FacebookControlPanelAdapter(SchemaAdapterBase):
     non_r_perm = ""
     r_perm = ""
     app_key = ""
-    #app_secret = ""
+    app_secret = ""
     app_key2 = ""
     app_secret2 = ""
 
@@ -199,18 +199,45 @@ class FacebookControlPanel(ControlPanelForm):
     request_user_auth = _(u"Request user auth")
     request_app_token = _(u"Authenticate app")
 
+    def decodeParams(self,params):
+        response = {}
+        for param in params.split("&"):
+            key, value = param.split("=")
+            response[key] = value
+        return response
+
     def __call__(self):
         if 'access_token' in self.request:
             logger.info("Got a request with a token !")
 
             token = self.request.get('access_token')
+            type_token = ""
             logger.info("Token: %s"%token)
 
             if self.request.get('app_token'):
                 url = "https://graph.facebook.com/app?access_token="
+                type_token = "app_token"
             else:
                 url = "https://graph.facebook.com/me?access_token="
+                type_token = "user_token"
             expires = self.request.get('expires_in', '0')
+
+            state = self.request.get("state")
+
+            if type_token == "user_token" and len(state.split("|"))>1:
+                app_id, app_secret = state.split("|")
+                url_extend = ("https://graph.facebook.com/oauth/access_token?" +
+                              "grant_type=fb_exchange_token&" +
+                              "client_id={app_id}&" +
+                              "client_secret={app_secret}&" +
+                              "fb_exchange_token={short_token}").format(app_id=app_id, app_secret=app_secret, short_token=token)
+
+                response = urllib.urlopen(url_extend)
+                params = self.decodeParams(response.read())
+
+                token = params.get("access_token",token)
+                logger.info("Long Live Token: %s" % token)
+                expires = params.get("expires", expires)
 
             if expires != '0':
                 date = datetime.now() + timedelta(seconds=int(expires))
@@ -238,8 +265,9 @@ class FacebookControlPanel(ControlPanelForm):
 
 
             accounts[id] = {'name' : name,
-                              'access_token' : token,
-                              'expires' : date}
+                            'type' : type_token,
+                            'access_token' : token,
+                            'expires' : date}
 
             registry['collective.facebook.accounts'] = accounts
             #self.status = _("Facebook account succesfully authorized.")

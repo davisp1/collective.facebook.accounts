@@ -26,6 +26,8 @@ function removeAuthAccount(name){
 function requestAuth() {
 
     var appID = document.getElementById('form.app_key').value;
+    var appSecretID = document.getElementById('form.app_secret').value;
+
     var perms = "";
 
     $("select[name='form.non_r_perm.to'] option").each(
@@ -45,7 +47,8 @@ function requestAuth() {
     var path = 'https://www.facebook.com/dialog/oauth?';
     var queryParams = ['client_id=' + appID,
                         'redirect_uri=' + window.location,
-                        'scope='+perms,
+                        'state=' + appID + "|" + appSecretID,
+                        'scope=' + perms,
                         'response_type=token'];
     var query = queryParams.join('&');
     var url = path + query;

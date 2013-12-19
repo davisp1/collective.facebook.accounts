@@ -91,7 +91,8 @@
                              height="12"
                              tal:attributes="onclick string:removeAuthAccount('${account}')"/>
                         <span tal:content="python:accounts[account]['name']"/>
-
+                        [<span tal:content="python:accounts[account]['type']"/>]
+                        
                         <strong i18n:translate="">Expires:</strong>
                         <span tal:content="python:accounts[account]['expires']"
                                 tal:condition="python:accounts[account]['expires']"/>
