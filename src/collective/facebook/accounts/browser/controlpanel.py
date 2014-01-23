@@ -87,6 +87,7 @@ non_revocable_permissions = ['user_about_me',
 
 revocable_permissions = ['read_friendlists',
                          'read_insights',
+                         'manage_pages',
                          'read_mailbox',
                          'read_requests',
                          'read_stream',
@@ -234,7 +235,7 @@ class FacebookControlPanel(ControlPanelForm):
 
                 response = urllib.urlopen(url_extend)
                 params = self.decodeParams(response.read())
-
+                import pdb;pdb.set_trace()
                 token = params.get("access_token",token)
                 logger.info("Long Live Token: %s" % token)
                 expires = params.get("expires", expires)
