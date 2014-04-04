@@ -266,7 +266,7 @@ class FacebookControlPanel(ControlPanelForm):
             
             for other in others.get("data", []):
                 accounts[other["id"]] = {'name': other.get("name"),
-                                         'type': other.get("category"),
+                                         'type': "other_token",
                                          'access_token': other.get("access_token"),
                                          'id': other.get("id"),
                                          'expires': 0}
