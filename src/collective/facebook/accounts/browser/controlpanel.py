@@ -221,11 +221,12 @@ class FacebookControlPanel(ControlPanelForm):
             else:
                 url = "https://graph.facebook.com/me?access_token="
                 type_token = "user_token"
+
             expires = self.request.get('expires_in', '0')
 
             state = self.request.get("state")
 
-            if type_token == "user_token" and len(state.split("|"))>1:
+            if type_token == "user_token" and len(state.split("|")) > 1:
                 app_id, app_secret = state.split("|")
                 url_extend = ("https://graph.facebook.com/oauth/access_token?" +
                               "grant_type=fb_exchange_token&" +
@@ -235,8 +236,8 @@ class FacebookControlPanel(ControlPanelForm):
 
                 response = urllib.urlopen(url_extend)
                 params = self.decodeParams(response.read())
-                import pdb;pdb.set_trace()
-                token = params.get("access_token",token)
+                token = params.get("access_token", token)
+
                 logger.info("Long Live Token: %s" % token)
                 expires = params.get("expires", expires)
 
@@ -246,13 +247,10 @@ class FacebookControlPanel(ControlPanelForm):
             else:
                 date = None
 
-            logger.info("URL to open: %s"%(url+token))
-            info = json.load(urllib.urlopen(url+token))
+            logger.info("URL to open: %s" % (url + token))
+            info = json.load(urllib.urlopen(url + token))
             name = info.get('name', 'no_name')
-
-            logger.info("Got a name: %s"%name)
-            normalizer = getUtility(IIDNormalizer)
-            id = normalizer.normalize(name)
+            id = info.get('id')
 
             registry = getUtility(IRegistry)
             accounts = registry['collective.facebook.accounts']
@@ -264,11 +262,20 @@ class FacebookControlPanel(ControlPanelForm):
             logger.info("access_token: %s" % token)
             logger.info("expires: %s" % date)
 
+            others = json.load(urllib.urlopen("https://graph.facebook.com/" + id + "/accounts?access_token=" + token))
+            
+            for other in others.get("data", []):
+                accounts[other["id"]] = {'name': other.get("name"),
+                                         'type': other.get("category"),
+                                         'access_token': other.get("access_token"),
+                                         'id': other.get("id"),
+                                         'expires': 0}
 
-            accounts[id] = {'name' : name,
-                            'type' : type_token,
-                            'access_token' : token,
-                            'expires' : date}
+            accounts[id] = {'name': name,
+                            'type': type_token,
+                            'access_token': token,
+                            'expires': date,
+                            'id': id}
 
             registry['collective.facebook.accounts'] = accounts
             #self.status = _("Facebook account succesfully authorized.")
